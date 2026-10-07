@@ -1,20 +1,27 @@
-import { Pool } from "pg";
+import { Sequelize } from "sequelize";
 import { Config } from "./config.js";
-export const db = new Pool({
-    user: Config.DB_USER,
-    host: Config.DB_HOST,
-    password: Config.DB_PASSWORD,
-    database: Config.DB_DATABASE,
-    port: Config.DB_PORT,
-})
 
-export const connetToDb = async (req, res) => {
-    try {
-        await db.connect()
-        console.log("db is connect ");
+const databaseUrl = Config.External_Database;
 
-    } catch (error) {
-        console.log(error, "this is db.js error");
-
-    }
+if (!databaseUrl) {
+  throw new Error("External_Database is missing from backend/.env");
 }
+
+export const sequelize = new Sequelize(databaseUrl, {
+  dialect: "postgres",
+  dialectOptions: {
+    ssl: {
+      require: true,
+      rejectUnauthorized: false
+    }
+  },
+  pool: Config.pool,
+  logging: false
+});
+
+export const connectToDb = async () => {
+  await sequelize.authenticate();
+  console.log("Database connected.");
+  await sequelize.sync();
+  console.log("Database synced successfully.");
+};
